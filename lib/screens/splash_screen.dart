@@ -26,6 +26,20 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+       body: Container(
+        color: Colors.lightGreen, 
+        child: const Center(
+          child: Text(
+            'NepaBite',
+            style: TextStyle(
+              fontSize: 40,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+      ),
      
     );
   }
