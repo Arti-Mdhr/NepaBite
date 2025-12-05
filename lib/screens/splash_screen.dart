@@ -12,7 +12,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(const Duration(seconds: 5), () {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -26,19 +26,19 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        color: const Color.fromARGB(255, 255, 255, 255),
+        color: const Color(0xFFFAF9F7),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Image.asset('assets/images/logo.png', height: 180,),
+              Image.asset('assets/images/logo1.png', height: 180,),
                const SizedBox(height: 40),
 
               const Text(
                 'NepaBite',
                 style: TextStyle(
                   fontSize: 40,
-                  color: const Color.fromARGB(255, 16, 172, 94),
+                  color: Color.fromARGB(255, 216, 236, 226),
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
                 ),
