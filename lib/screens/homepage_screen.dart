@@ -8,7 +8,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-
   final List<Map<String, String>> recipes = [
     {
       "title": "Yomari (Khuwa Filling)",
@@ -41,133 +40,139 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.white,
 
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-
-              // GREETING SECTION
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 20, 0, 5),
-                child: Text(
-                  "Namaste ,",
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                  ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
                 ),
-              ),
 
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  "What are you cooking today?",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
-                  ),
-                ),
-              ),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
 
-              const SizedBox(height: 15),
-
-              // SEARCH + FILTER ROW
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 15),
-                        height: 45,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade300),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // GREETING SECTION
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 20, 0, 5),
+                        child: Text(
+                          "Namaste ,",
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        child: const Row(
+                      ),
+
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          "What are you cooking today?",
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 15),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
                           children: [
-                            Icon(Icons.search, color: Colors.black54),
-                            SizedBox(width: 10),
-                            Text(
-                              "Search recipe",
-                              style: TextStyle(color: Colors.black45),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 15),
+                                height: 45,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.search, color: Colors.black54),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      "Search recipe",
+                                      style: TextStyle(color: Colors.black45),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              height: 45,
+                              width: 45,
+                              decoration: BoxDecoration(
+                                color: Color(0xFF1EB980),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.tune, color: Colors.white),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      height: 45,
-                      width: 45,
-                      decoration: BoxDecoration(
-                        color: Color(0xFF1EB980),
-                        borderRadius: BorderRadius.circular(12),
+
+                      const SizedBox(height: 15),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            _buildChip("All", 0),
+                            _buildChip("Nepali", 1),
+                            _buildChip("Newari", 2),
+                            _buildChip("Street Food", 3),
+                          ],
+                        ),
                       ),
-                      child: const Icon(Icons.tune, color: Colors.white),
-                    )
-                  ],
-                ),
-              ),
 
-              const SizedBox(height: 15),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        height: 240,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: recipes.length,
+                          itemBuilder: (context, index) {
+                            return _buildRecipeCard(recipes[index]);
+                          },
+                        ),
+                      ),
 
-              // CATEGORY CHIPS
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    _buildChip("All", 0),
-                    _buildChip("Nepali", 1),
-                    _buildChip("Newari", 2),
-                    _buildChip("Street Food", 3),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: 20),
 
-              const SizedBox(height: 20),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          "New Recipes",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
 
-              // TOP RECIPES SLIDER
-              SizedBox(
-                height: 240,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: recipes.length,
-                  itemBuilder: (context, index) {
-                    return _buildRecipeCard(recipes[index]);
-                  },
-                ),
-              ),
+                      const SizedBox(height: 15),
+                      SizedBox(
+                        height: 220,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: newRecipes.length,
+                          itemBuilder: (context, index) {
+                            return _buildSmallRecipeCard(newRecipes[index]);
+                          },
+                        ),
+                      ),
 
-              const SizedBox(height: 20),
-
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  "New Recipes",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
               ),
-
-              const SizedBox(height: 15),
-
-              SizedBox(
-                height: 220,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: newRecipes.length,
-                  itemBuilder: (context, index) {
-                    return _buildSmallRecipeCard(newRecipes[index]);
-                  },
-                ),
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
+            );
+          },
         ),
       ),
 
@@ -191,17 +196,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // CATEGORY CHIP
   Widget _buildChip(String text, int index) {
     bool isSelected = selectedCategory == index;
 
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedCategory = index;
-        });
-      },
+      onTap: () => setState(() => selectedCategory = index),
       child: Container(
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
@@ -222,8 +221,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // LARGE RECIPE CARD
   Widget _buildRecipeCard(Map<String, String> recipe) {
     return Container(
       width: 170,
@@ -235,7 +232,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(18),
@@ -248,7 +244,6 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(10),
             child: Column(
@@ -276,8 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // SMALL RECIPE CARD
   Widget _buildSmallRecipeCard(Map<String, String> recipe) {
     return Container(
       width: 160,
@@ -288,7 +281,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-
           ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(18),
@@ -301,7 +293,6 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(10),
             child: Text(
