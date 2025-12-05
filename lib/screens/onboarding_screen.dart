@@ -12,30 +12,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   int _currentPage = 0;
 
   final List<Map<String, dynamic>> onboardingData = [
-  {
-    "icon": Icons.restaurant_menu,
-    "title": "Discover Nepali Flavors",
-    "description":
-        "Explore authentic Nepali recipes and find dishes you can cook with the ingredients you already have."
-  },
-  {
-    "icon": Icons.shopping_cart_checkout,
-    "title": "Smart Grocery Assistant",
-    "description":
-        "Auto-generate a grocery list for missing ingredients and keep your shopping organized and simple."
-  },
-  {
-    "icon": Icons.location_on,
-    "title": "Find Nearby Marts",
-    "description":
-        "Locate nearby grocery stores and see where you can quickly get the ingredients you need."
-  }
-];
-
+    {
+      "icon": Icons.restaurant_menu,
+      "title": "Discover Nepali Flavors",
+      "description": "Explore authentic Nepali recipes and find dishes you can cook with the ingredients you already have."
+    },
+    {
+      "icon": Icons.shopping_cart_checkout,
+      "title": "Smart Grocery Assistant",
+      "description": "Auto-generate a grocery list for missing ingredients and keep your shopping organized and simple."
+    },
+    {
+      "icon": Icons.location_on,
+      "title": "Find Nearby Marts",
+      "description": "Locate nearby grocery stores and see where you can quickly get the ingredients you need."
+    }
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: Container(
+    return Scaffold(
+      body: Container(
         height: double.infinity,
         width: double.infinity,
         color: const Color(0xFFFFF6ED),
@@ -73,7 +70,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         const SizedBox(height: 20),
                         Text(
                           onboardingData[index]['description'],
-                          style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Color.fromARGB(255, 104, 100, 100),
+                          ),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -82,8 +82,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
             ),
-
-           
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(onboardingData.length, (index) {
@@ -92,21 +90,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   width: _currentPage == index ? 20 : 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: _currentPage == index ? const Color.fromARGB(255, 16, 172, 94) : Colors.grey,
+                    color: _currentPage == index
+                        ? const Color.fromARGB(255, 16, 172, 94)
+                        : const Color.fromARGB(255, 121, 116, 116),
                     borderRadius: BorderRadius.circular(10),
                   ),
                 );
               }),
             ),
-
             const SizedBox(height: 20),
-
-           
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:  const Color.fromARGB(255, 16, 172, 94),
+                  backgroundColor: const Color.fromARGB(255, 16, 172, 94),
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30),
@@ -119,24 +116,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       curve: Curves.ease,
                     );
                   } else {
-
-                    print("Onboarding Completed! Add navigation here.");
+                    print("Onboarding Completed");
                   }
                 },
                 child: Text(
                   _currentPage == onboardingData.length - 1
                       ? "Get Started"
                       : "Next",
-                  style: const TextStyle(fontSize: 18),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
-
             const SizedBox(height: 30),
           ],
         ),
       ),
-      
     );
   }
 }
