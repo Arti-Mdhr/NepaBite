@@ -38,7 +38,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 'NepaBite',
                 style: TextStyle(
                   fontSize: 40,
-                  color: Color.fromARGB(255, 216, 236, 226),
+                  color: Color.fromARGB(255, 28, 102, 65),
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
                 ),
