@@ -35,8 +35,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
+    return Scaffold(body: Container(
         height: double.infinity,
         width: double.infinity,
         color: const Color(0xFFFFF6ED),
@@ -137,6 +136,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ],
         ),
       ),
+      
     );
   }
 }
