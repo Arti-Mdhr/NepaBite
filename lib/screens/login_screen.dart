@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:nepabite/screens/signup_screen.dart';  // Import the Signup screen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -28,7 +29,8 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [Row(
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Column(
@@ -51,11 +53,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-                // CircleAvatar(
-                //   radius: 30,
-                //   backgroundImage: AssetImage('assets/images/your_logo1.png'),
-                //   backgroundColor: const Color.fromARGB(0, 75, 26, 26),
-                // ),
               ],
             ),
 
@@ -94,7 +91,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 30),
 
-             
                   const Text(
                     "Enter Password",
                     style: TextStyle(
@@ -134,12 +130,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 15),
 
-                
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
                       onPressed: () {
-                     
+                        // Add the functionality for "Forgot Password" if needed
                       },
                       child: const Text(
                         "Forgot Password?",
@@ -154,7 +149,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 80),
 
-               
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -172,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
-                         
+                          // Handle Sign In
                         }
                       },
                     ),
@@ -180,7 +174,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   const SizedBox(height: 40),
 
-                  
                   Center(
                     child: RichText(
                       text: TextSpan(
@@ -199,7 +192,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
-                               
+                                // Navigate to the Sign Up page
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SignupScreen(),
+                                  ),
+                                );
                               },
                           ),
                         ],
@@ -208,7 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),
