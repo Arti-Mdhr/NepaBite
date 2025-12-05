@@ -34,14 +34,13 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(  // Make the whole screen scrollable
+        child: SingleChildScrollView( 
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), // Reduced padding for better layout
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20), 
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-             
-                Row(
+               Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Column(
@@ -67,8 +66,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   ],
                 ),
                 const SizedBox(height: 30),
-
-              
                 Form(
                   key: _formKey,
                   child: Column(
@@ -97,9 +94,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         },
                       ),
                       const SizedBox(height: 15),
-
-                  
-                      const Text(
+                     const Text(
                         "Email",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
@@ -122,9 +117,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         },
                       ),
                       const SizedBox(height: 15),
-
-                   
-                      const Text(
+                     const Text(
                         "Phone Number",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
@@ -146,8 +139,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         },
                       ),
                       const SizedBox(height: 15),
-
-               
                       const Text(
                         "Address",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
