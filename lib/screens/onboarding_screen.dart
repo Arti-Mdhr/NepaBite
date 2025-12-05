@@ -111,18 +111,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ),
                 ),
                 onPressed: () {
-                  if (_currentPage < onboardingData.length - 1) {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.ease,
-                    );
-                  } else {
-                     Navigator.pushReplacement(
-                      context,
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-                  }
-                },
+  if (_currentPage < onboardingData.length - 1) {
+    _pageController.nextPage(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.ease,
+    );
+  } else {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      ),
+    );
+  }
+},
+
                 child: Text(
                   _currentPage == onboardingData.length - 1
                       ? "Get Started"
