@@ -52,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
 
-      // 👇 BODY SWITCHES LIKE YOUR FRIEND'S CODE
       body: lstScreens[_selectedIndex],
 
       bottomNavigationBar: BottomNavigationBar(
