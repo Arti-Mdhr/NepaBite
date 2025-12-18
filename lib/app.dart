@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nepabite/screens/homepage_screen.dart';
-import 'package:nepabite/screens/splash_screen.dart';
+import 'package:nepabite/screens/home/homepage_screen.dart';
+import 'package:nepabite/onboarding/splash_screen.dart';
 
 
 class MyApp extends StatelessWidget {
