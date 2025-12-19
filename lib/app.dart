@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nepabite/screens/home/homepage_screen.dart';
 import 'package:nepabite/onboarding/splash_screen.dart';
+import 'package:nepabite/theme/app_theme.dart';
 
 
 class MyApp extends StatelessWidget {
@@ -9,13 +9,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NepaBite',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: SplashScreen (),
+      debugShowCheckedModeBanner: false, 
+      theme: applicationTheme(), 
+      home: SplashScreen(), 
     );
   }
 }
