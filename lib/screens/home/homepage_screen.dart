@@ -53,12 +53,12 @@ class _HomeScreenState extends State<HomeScreen> {
       body: lstScreens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF1EB980),  // Green color for selected icon
-        unselectedItemColor: Colors.grey,  // Grey color for unselected icons
+        selectedItemColor: const Color(0xFF1EB980), // Selected item color
+        unselectedItemColor: Colors.grey,  // Unselected item color
         currentIndex: _selectedIndex,
-        showUnselectedLabels: true,  // Show unselected labels
-        showSelectedLabels: true,  // Show selected labels
-        type: BottomNavigationBarType.fixed,  // Fixed layout, no shifting or resizing
+        showUnselectedLabels: false,  // Hide unselected labels to avoid shifting
+        showSelectedLabels: true,    // Show selected labels
+        type: BottomNavigationBarType.fixed,  // Ensures even spacing of items
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
@@ -85,6 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // Home Screen Layout
   Widget _buildHomeScreen() {
     return SafeArea(
       child: SingleChildScrollView(
@@ -113,6 +115,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 18),
+
+            // Search Bar with Filter Icon
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -151,6 +155,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 18),
+
+            // Category Chips for Filtering
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -163,43 +169,48 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 22),
-            SizedBox(
-              height: 250,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: recipes.length,
-                itemBuilder: (context, index) {
-                  return _buildRecipeCard(recipes[index]);
-                },
-              ),
-            ),
+
+            // Recipe List Section
+            _buildRecipeSection("Popular Recipes", recipes),
             const SizedBox(height: 20),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                "New Recipes",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            SizedBox(
-              height: 210,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: newRecipes.length,
-                itemBuilder: (context, index) {
-                  return _buildSmallRecipeCard(newRecipes[index]);
-                },
-              ),
-            ),
+            _buildRecipeSection("New Recipes", newRecipes),
           ],
         ),
       ),
     );
   }
+
+  // Generic Recipe Section Builder
+  Widget _buildRecipeSection(String title, List<Map<String, String>> recipeList) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const SizedBox(height: 15),
+        SizedBox(
+          height: 210,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: recipeList.length,
+            itemBuilder: (context, index) {
+              return _buildRecipeCard(recipeList[index]);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Category Chip Widget
   Widget _buildChip(String text, int index) {
     bool isSelected = selectedCategory == index;
 
@@ -229,6 +240,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // Recipe Card for Horizontal List
   Widget _buildRecipeCard(Map<String, String> recipe) {
     return Container(
       width: 175,
@@ -272,39 +285,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           )
-        ],
-      ),
-    );
-  }
-  Widget _buildSmallRecipeCard(Map<String, String> recipe) {
-    return Container(
-      width: 160,
-      margin: const EdgeInsets.only(left: 20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.grey.shade100,
-      ),
-      child: Column(
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            child: Image.asset(
-              recipe["image"]!,
-              height: 135,
-              width: 160,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Text(
-              recipe["title"]!,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
         ],
       ),
     );

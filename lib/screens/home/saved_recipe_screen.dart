@@ -10,6 +10,13 @@ class SavedRecipeScreen extends StatefulWidget {
 class _SavedRecipeScreenState extends State<SavedRecipeScreen> {
   @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Saved Recipes"),
+      ),
+      body: Center(
+        child: const Text("This is the Saved Recipe screen"),
+      ),
+    );
   }
 }
