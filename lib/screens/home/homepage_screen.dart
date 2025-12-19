@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
 import 'cart_screen.dart';
 import 'profile_screen.dart';
-import  'saved_recipe_screen.dart';
+import 'saved_recipe_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,21 +50,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: lstScreens[_selectedIndex],
-
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.white,
+        selectedItemColor: const Color(0xFF1EB980),  // Green color for selected icon
+        unselectedItemColor: Colors.grey,  // Grey color for unselected icons
         currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFF1EB980),
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-
+        showUnselectedLabels: true,  // Show unselected labels
+        showSelectedLabels: true,  // Show selected labels
+        type: BottomNavigationBarType.fixed,  // Fixed layout, no shifting or resizing
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
           });
         },
-
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -104,7 +102,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -115,9 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 18),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -142,9 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Container(
                     height: 45,
                     width: 45,
@@ -157,9 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 18),
-
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -171,9 +162,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-
             const SizedBox(height: 22),
-
             SizedBox(
               height: 250,
               child: ListView.builder(
@@ -184,9 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             ),
-
             const SizedBox(height: 20),
-
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -197,9 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
             const SizedBox(height: 15),
-
             SizedBox(
               height: 210,
               child: ListView.builder(
@@ -256,8 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(18)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
             child: Image.asset(
               recipe["image"]!,
               height: 135,
@@ -265,7 +249,6 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -278,9 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 const SizedBox(height: 5),
-
                 Text(
                   "Time: ${recipe['time']}",
                   style: const TextStyle(
@@ -295,7 +276,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
   Widget _buildSmallRecipeCard(Map<String, String> recipe) {
     return Container(
       width: 160,
@@ -307,8 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         children: [
           ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(18)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
             child: Image.asset(
               recipe["image"]!,
               height: 135,
@@ -316,7 +295,6 @@ class _HomeScreenState extends State<HomeScreen> {
               fit: BoxFit.cover,
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.all(10),
             child: Text(
