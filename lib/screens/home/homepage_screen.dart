@@ -53,12 +53,11 @@ class _HomeScreenState extends State<HomeScreen> {
       body: lstScreens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF1EB980), // Selected item color
-        unselectedItemColor: Colors.grey,  // Unselected item color
+        selectedItemColor: const Color(0xFF1EB980), 
+        unselectedItemColor: Colors.grey,  
         currentIndex: _selectedIndex,
-        showUnselectedLabels: false,  // Hide unselected labels to avoid shifting
-        showSelectedLabels: true,    // Show selected labels
-        type: BottomNavigationBarType.fixed,  // Ensures even spacing of items
+        showUnselectedLabels: false,
+        type: BottomNavigationBarType.fixed,  
         onTap: (index) {
           setState(() {
             _selectedIndex = index;
@@ -85,8 +84,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // Home Screen Layout
   Widget _buildHomeScreen() {
     return SafeArea(
       child: SingleChildScrollView(
@@ -115,8 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 18),
-
-            // Search Bar with Filter Icon
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -155,8 +150,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 18),
-
-            // Category Chips for Filtering
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -169,8 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 22),
-
-            // Recipe List Section
             _buildRecipeSection("Popular Recipes", recipes),
             const SizedBox(height: 20),
             _buildRecipeSection("New Recipes", newRecipes),
@@ -179,8 +170,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // Generic Recipe Section Builder
   Widget _buildRecipeSection(String title, List<Map<String, String>> recipeList) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,8 +198,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
-
-  // Category Chip Widget
   Widget _buildChip(String text, int index) {
     bool isSelected = selectedCategory == index;
 
@@ -240,8 +227,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // Recipe Card for Horizontal List
   Widget _buildRecipeCard(Map<String, String> recipe) {
     return Container(
       width: 175,
