@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nepabite/screens/auth/login_screen.dart';
+import 'package:nepabite/features/auth/presentation/pages/login_screen.dart';
+
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
