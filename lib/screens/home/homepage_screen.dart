@@ -39,8 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int selectedCategory = 0;
 
-  late final List<Widget> lstScreens = [
-    _buildHomeScreen(),
+  late final List<Widget> lstScreens = [ _buildHomeScreen(),
     const CartScreen(),
     const SavedRecipeScreen(),
     const ProfileScreen(),
