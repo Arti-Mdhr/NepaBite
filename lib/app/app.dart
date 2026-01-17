@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nepabite/onboarding/splash_screen.dart';
 import 'package:nepabite/app/themes/app_theme.dart';
-
+import 'package:nepabite/onboarding/splash_screen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -9,9 +8,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, 
-      theme: applicationTheme(), 
-      home: SplashScreen(), 
+      debugShowCheckedModeBanner: false,
+      theme: applicationTheme(),
+      home:SplashScreen() ,
     );
   }
 }
