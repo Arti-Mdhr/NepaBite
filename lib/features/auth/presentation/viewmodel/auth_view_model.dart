@@ -23,6 +23,7 @@ class UserViewModel extends Notifier<AuthState> {
     required String fullName,
     required String email,
     required String password,
+    required String confirmPassword,
     String? address,
     String? phoneNumber,
   }) async {
@@ -31,25 +32,25 @@ class UserViewModel extends Notifier<AuthState> {
       fullName: fullName,
       email: email,
       password: password,
+      confirmPassword: confirmPassword,
       address: address,
       phoneNumber: phoneNumber,
     );
     final result = await _registerUsecase.call(registerParams);
     result.fold((failure){
-      state.copyWith(
+      state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: failure.message
       );
     },(isRegistered){
       if (isRegistered) {
-        state=state.copyWith(status: AuthStatus.registered);
+        state = state.copyWith(status: AuthStatus.registered);
       }else{
-        state=state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: "registration failed"
-      );
+        state = state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: "registration failed"
+        );
       }
-      
     });
   }
 

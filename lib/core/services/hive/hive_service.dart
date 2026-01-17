@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 
 // Hive Service Provider
-final hiveServiceProvider= Provider((ref){
+final hiveServiceProvider= Provider<HiveService>((ref){
   return HiveService();
 });
 
@@ -62,11 +62,11 @@ Future<void>logout() async{
 }
 
 // Get Current User.
-AuthHiveModel? getCurrentUser(String userId){
+Future<AuthHiveModel?> getCurrentUser(String userId) async {
   return _userBox.get(userId);
 }
 
-bool isEmailExists(String email) {
+Future<bool> isEmailExists(String email) async {
   final users= _userBox.values.where((user)=>user.email == email);
   return users.isNotEmpty;
 }
