@@ -42,6 +42,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             fullName: _fullNameController.text,
             email: _emailController.text,
             password: _passwordController.text,
+            confirmPassword: _confirmPasswordController.text,
             address: _addressController.text,
             phoneNumber: _phoneNumberController.text,
           );
