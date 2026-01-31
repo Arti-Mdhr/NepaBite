@@ -51,7 +51,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to user state changes
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
       if (next.status == AuthStatus.registered) {
         SnackbarUtils.showSuccess(

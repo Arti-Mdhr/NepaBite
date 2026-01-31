@@ -1,24 +1,27 @@
+import 'dart:io';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nepabite/features/auth/domain/usecases/login_usecase.dart';
 import 'package:nepabite/features/auth/domain/usecases/register_usecase.dart';
+import 'package:nepabite/features/auth/domain/usecases/upload_profile_image_usecase.dart';
 import 'package:nepabite/features/auth/presentation/state/auth_state.dart';
 
-// user view model provider
-final authViewModelProvider= NotifierProvider<UserViewModel, AuthState>(
-  ()=>UserViewModel()
-);
+final authViewModelProvider =
+    NotifierProvider<UserViewModel, AuthState>(() => UserViewModel());
 
 class UserViewModel extends Notifier<AuthState> {
   late final RegisterUsecase _registerUsecase;
   late final LoginUsecase _loginUsecase;
+  late final UploadProfileImageUsecase _uploadProfileImageUsecase;
 
   @override
-  build() {
+  AuthState build() {
     _registerUsecase = ref.read(registerUsecaseProvider);
     _loginUsecase = ref.read(loginUsecaseProvider);
-    return AuthState();
+    _uploadProfileImageUsecase =
+        ref.read(uploadProfileImageUsecaseProvider);
+    return const AuthState();
   }
-  // register method 
   Future<void> register({
     required String fullName,
     required String email,
@@ -28,6 +31,7 @@ class UserViewModel extends Notifier<AuthState> {
     String? phoneNumber,
   }) async {
     state = state.copyWith(status: AuthStatus.loading);
+
     final registerParams = RegisterUsecaseParams(
       fullName: fullName,
       email: email,
@@ -36,45 +40,72 @@ class UserViewModel extends Notifier<AuthState> {
       address: address,
       phoneNumber: phoneNumber,
     );
+
     final result = await _registerUsecase.call(registerParams);
-    result.fold((failure){
-      state = state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: failure.message
-      );
-    },(isRegistered){
-      if (isRegistered) {
-        state = state.copyWith(status: AuthStatus.registered);
-      }else{
+
+    result.fold(
+      (failure) {
         state = state.copyWith(
           status: AuthStatus.error,
-          errorMessage: "registration failed"
+          errorMessage: failure.message,
         );
-      }
-    });
+      },
+      (isRegistered) {
+        if (isRegistered) {
+          state = state.copyWith(status: AuthStatus.registered);
+        } else {
+          state = state.copyWith(
+            status: AuthStatus.error,
+            errorMessage: "Registration failed",
+          );
+        }
+      },
+    );
   }
-
-
-  // Login Method
   Future<void> login({
     required String email,
-    required String password
-  })async{
-    state=state.copyWith(status: AuthStatus.loading);
-    final loginParams=LoginUsecaseParams(email: email, password: password);
-    final result= await _loginUsecase(loginParams);
+    required String password,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading);
 
-    result.fold((failure){
-      state=state.copyWith(
-        status: AuthStatus.error,
-        errorMessage: failure.message
-      );
-    }, 
-    (userEntity){
-      state=state.copyWith(
-        status: AuthStatus.authenticated,
-        userEntity: userEntity,
-      );
-    });
+    final loginParams =
+        LoginUsecaseParams(email: email, password: password);
+
+    final result = await _loginUsecase(loginParams);
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: failure.message,
+        );
+      },
+      (userEntity) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          authEntity: userEntity,
+        );
+      },
+    );
+  }
+  Future<void> uploadProfileImage(File image) async {
+    state = state.copyWith(status: AuthStatus.loading);
+
+    final result = await _uploadProfileImageUsecase.call(image);
+
+    result.fold(
+      (failure) {
+        state = state.copyWith(
+          status: AuthStatus.error,
+          errorMessage: failure.message,
+        );
+      },
+      (userEntity) {
+        state = state.copyWith(
+          status: AuthStatus.authenticated,
+          authEntity: userEntity,
+        );
+      },
+    );
   }
 }
