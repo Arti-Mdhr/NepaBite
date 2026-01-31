@@ -1,10 +1,10 @@
 class ApiEndpoints {
   ApiEndpoints._();
 
-  // ✅ Root server (used for images /uploads/... and also for API base)
+  // Root server (used for images /uploads/... and also for API base)
   static const String serverUrl = 'http://10.0.2.2:5050';
 
-  // ✅ API base URL
+  // API base URL
   static const String baseUrl = '$serverUrl/api';
 
   //static const String baseUrl = 'http://localhost:3000/api/v1';
@@ -21,11 +21,11 @@ class ApiEndpoints {
   static const String userRegister = '/auth/register';
   static String userById(String id) => '/auth/$id';
 
-  // ✅ NEW: profile endpoints (for image upload + view profile)
+  //  profile endpoints (for image upload + view profile)
   static const String userProfile = '/auth/profile';
   static const String uploadProfileImage = '/auth/profile/image';
 
-  // ✅ Helper for showing server images like /uploads/users/xxx.jpg
+  //  Helper for showing server images like /uploads/users/xxx.jpg
   static String fileUrl(String path) => '$serverUrl$path';
 
   // ============ Batch Endpoints ============
