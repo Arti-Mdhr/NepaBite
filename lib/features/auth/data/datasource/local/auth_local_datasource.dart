@@ -4,7 +4,6 @@ import 'package:nepabite/core/services/storage/user_session_service.dart';
 import 'package:nepabite/features/auth/data/datasource/auth_datasource.dart';
 import 'package:nepabite/features/auth/data/model/auth_hive_model.dart';
 
-// Local datasource Provider
 final authLocalDatasourceProvider = Provider<IAuthLocalDatasource>((ref) {
   final hiveService = ref.read(hiveServiceProvider);
   final userSessionService = ref.read(userSessionServiceProvider);
@@ -28,7 +27,6 @@ class AuthLocalDatasource implements IAuthLocalDatasource {
   @override
   Future<AuthHiveModel?> getCurrentUser() async {
     try {
-      // Retrieve the current user from Hive
       return await _hiveService.getCurrentUser('authId');
     } catch (e) {
       return null;
@@ -49,7 +47,6 @@ class AuthLocalDatasource implements IAuthLocalDatasource {
   Future<AuthHiveModel?> loginUser(String email, String password) async {
     try {
       final user = await _hiveService.loginUser(email, password);
-      // Save user data in session using UserSessionService
       if (user != null) {
         await _userSessionService.saveUserSession(
           authId: user.authId!,

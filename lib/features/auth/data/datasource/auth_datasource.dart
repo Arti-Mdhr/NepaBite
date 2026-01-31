@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:nepabite/features/auth/data/model/auth_api_model.dart';
 import 'package:nepabite/features/auth/data/model/auth_hive_model.dart';
 
@@ -18,4 +20,6 @@ abstract interface class IAuthRemoteDatasource {
   Future<AuthApiModel?> getCurrentUser();
   Future<AuthApiModel?> loginUser(String email, String password);
   Future<bool> logout();
+
+  Future<AuthApiModel?> uploadProfileImage(File image);
 }
