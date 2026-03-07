@@ -58,4 +58,20 @@ class ApiEndpoints {
   static String commentById(String id) => '/comments/$id';
   static String commentsByItem(String itemId) => '/comments/item/$itemId';
   static String commentLike(String id) => '/comments/$id/like';
+
+
+
+  // ================= RECIPES =================
+  static const String recipes = '/recipes';
+  static String recipeById(String id) => '/recipes/$id';
+
+  // ================= CART =================
+  static const String cart = '/cart';
+
+  // ================= SAVED RECIPES =================
+  static const String savedRecipes = '/saved-recipes';
+  static const String saveRecipe = '/saved-recipes/save';
+  static String removeSavedRecipe(String id) => '/saved-recipes/remove/$id';
+
 }
+
