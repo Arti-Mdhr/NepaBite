@@ -4,11 +4,26 @@ import 'package:nepabite/features/cart/data/grocery_storage_service.dart';
 import 'package:nepabite/features/cart/domain/entity/grocery_list_entity.dart';
 import 'package:nepabite/features/cart/presentation/viewmodel/cart_view_model.dart';
 
-class CartScreen extends ConsumerWidget {
+class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends ConsumerState<CartScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    // Load cart from backend
+    Future.microtask(() {
+      ref.read(cartProvider.notifier).fetchCart();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cartItems = ref.watch(cartProvider);
 
     return Scaffold(

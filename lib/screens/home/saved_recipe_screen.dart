@@ -4,11 +4,27 @@ import 'package:nepabite/core/api/api_endpoints.dart';
 import 'package:nepabite/features/recipe/presentation/viewmodel/saved_recipe_view_model.dart';
 import 'package:nepabite/screens/recipe/recipe_detail_screen.dart';
 
-class SavedRecipeScreen extends ConsumerWidget {
+class SavedRecipeScreen extends ConsumerStatefulWidget {
   const SavedRecipeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SavedRecipeScreen> createState() =>
+      _SavedRecipeScreenState();
+}
+
+class _SavedRecipeScreenState extends ConsumerState<SavedRecipeScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() {
+      ref.read(savedRecipeProvider.notifier).fetchSavedRecipes();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final recipes = ref.watch(savedRecipeProvider);
 
     return Scaffold(
@@ -44,7 +60,6 @@ class SavedRecipeScreen extends ConsumerWidget {
                   child: ListTile(
                     contentPadding: const EdgeInsets.all(8),
 
-                    // ← ADDED onTap
                     onTap: () {
                       Navigator.push(
                         context,
@@ -70,10 +85,12 @@ class SavedRecipeScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+
                     title: Text(
                       recipe.title,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
+
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline, color: Colors.red),
                       onPressed: () {

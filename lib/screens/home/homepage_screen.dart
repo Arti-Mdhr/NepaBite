@@ -25,8 +25,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
     Future.microtask(() {
       ref.read(recipeViewModelProvider.notifier).fetchRecipes();
+      ref.read(savedRecipeProvider.notifier).fetchSavedRecipes();
     });
   }
 
@@ -206,6 +208,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildRecipeCard(recipe) {
+
+    ref.watch(savedRecipeProvider);
+    final notifier = ref.read(savedRecipeProvider.notifier);
+    final isSaved = notifier.isSaved(recipe.id);
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -273,44 +280,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
 
-                  // BOOKMARK BUTTON
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    icon: const Icon(
-                      Icons.bookmark_border,
-                      color: Color(0xFF1EB980),
+                    icon: Icon(
+                      isSaved ? Icons.bookmark : Icons.bookmark_border,
+                      color: const Color(0xFF1EB980),
                       size: 20,
                     ),
                     onPressed: () {
-                      ref.read(savedRecipeProvider.notifier).saveRecipe(
-                        SavedRecipeEntity(
-                          id: recipe.id,
-                          title: recipe.title,
-                          image: recipe.image,
-                          category: recipe.category,
-                          description: recipe.description,
 
-                          // ← SAFE CAST for ingredients
-                          ingredients: (recipe.ingredients as List?)
-                                  ?.map((e) =>
-                                      Map<String, dynamic>.from(e as Map))
-                                  .toList() ??
-                              [],
+                      if (isSaved) {
+                        notifier.removeRecipe(recipe.id);
 
-                          // ← SAFE CAST for instructions
-                          instructions: (recipe.instructions as List?)
-                                  ?.map((e) => e.toString())
-                                  .toList() ??
-                              [],
-                        ),
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Recipe saved!"),
-                          backgroundColor: Color(0xFF1EB980),
-                        ),
-                      );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Recipe removed"),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+
+                      } else {
+
+                        notifier.saveRecipe(
+                          SavedRecipeEntity(
+                            id: recipe.id,
+                            title: recipe.title,
+                            image: recipe.image,
+                            category: recipe.category,
+                            description: recipe.description,
+                            ingredients: List<Map<String, dynamic>>.from(
+                                recipe.ingredients ?? []),
+                            instructions:
+                                List<String>.from(recipe.instructions ?? []),
+                          ),
+                        );
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Recipe saved!"),
+                            backgroundColor: Color(0xFF1EB980),
+                          ),
+                        );
+                      }
                     },
                   ),
 

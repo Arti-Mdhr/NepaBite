@@ -1,8 +1,8 @@
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:nepabite/core/api/api_endpoints.dart';
 import 'package:nepabite/features/review/data/model/review_api_model.dart';
-
 import 'package:nepabite/features/review/domain/entity/review_entity.dart';
 import 'recipe_ingredients_screen.dart';
 import 'recipe_procedure_screen.dart';
@@ -28,10 +28,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   Future<List<ReviewEntity>> fetchReviews(String recipeId) async {
     try {
-      final response = await Dio().get(
-        "${ApiEndpoints.baseUrl}/reviews/$recipeId",
-      );
+      final response =
+          await Dio().get("${ApiEndpoints.baseUrl}/reviews/$recipeId");
+
       final reviews = response.data["reviews"] as List;
+
       return reviews
           .map((e) => ReviewApiModel.fromJson(e).toEntity())
           .toList();
@@ -95,7 +96,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
             const SizedBox(height: 20),
 
-            /// BUTTONS
+            /// INGREDIENTS & PROCEDURE BUTTONS
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -115,11 +116,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       ),
                       onPressed: () {
                         setState(() => selectedButton = 1);
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => RecipeIngredientsScreen(
-                                recipe: widget.recipe),
+                              recipe: widget.recipe,
+                            ),
                           ),
                         );
                       },
@@ -143,11 +146,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                       ),
                       onPressed: () {
                         setState(() => selectedButton = 2);
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => RecipeProcedureScreen(
-                                recipe: widget.recipe),
+                              recipe: widget.recipe,
+                            ),
                           ),
                         );
                       },
@@ -160,7 +165,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
             const SizedBox(height: 24),
 
-            /// DESCRIPTION
+            /// DESCRIPTION TITLE
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -174,6 +179,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
             const SizedBox(height: 10),
 
+            /// DESCRIPTION TEXT
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -187,7 +193,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
             const SizedBox(height: 24),
 
-            /// REVIEWS SECTION
+            /// REVIEWS TITLE
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
@@ -201,11 +207,11 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
             const SizedBox(height: 10),
 
+            /// REVIEWS LIST
             FutureBuilder<List<ReviewEntity>>(
               future: _reviewsFuture,
               builder: (context, snapshot) {
 
-                // LOADING
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
                     padding: EdgeInsets.all(20),
@@ -213,7 +219,6 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                   );
                 }
 
-                // ERROR or EMPTY
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16),
@@ -252,13 +257,14 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
+
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // USERNAME + STARS
+            /// USERNAME + RATING
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -269,10 +275,13 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                     fontSize: 14,
                   ),
                 ),
+
                 Row(
                   children: List.generate(5, (i) {
                     return Icon(
-                      i < review.rating ? Icons.star : Icons.star_border,
+                      i < review.rating
+                          ? Icons.star
+                          : Icons.star_border,
                       color: const Color(0xFF1EB980),
                       size: 16,
                     );
@@ -283,7 +292,7 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
             const SizedBox(height: 6),
 
-            // COMMENT
+            /// COMMENT
             Text(
               review.comment,
               style: const TextStyle(
@@ -298,3 +307,4 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
     );
   }
 }
+
