@@ -8,6 +8,7 @@ class RecipeEntity extends Equatable {
   final String category;
   final List<Map<String, dynamic>> ingredients;
   final List<String> instructions;
+  final double averageRating;
 
   const RecipeEntity({
     required this.id,
@@ -17,6 +18,7 @@ class RecipeEntity extends Equatable {
     required this.category,
     List<Map<String, dynamic>>? ingredients,
     List<String>? instructions,
+    this.averageRating = 0.0,
   })  : ingredients = ingredients ?? const [],
         instructions = instructions ?? const [];
 
@@ -29,5 +31,6 @@ class RecipeEntity extends Equatable {
         category,
         ingredients,
         instructions,
+        averageRating,
       ];
 }

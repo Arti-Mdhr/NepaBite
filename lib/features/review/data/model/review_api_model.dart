@@ -7,6 +7,7 @@ class ReviewApiModel {
   final int rating;
   final DateTime createdAt;
   final bool isOwner;
+  final double averageRating;
 
   ReviewApiModel({
     required this.id,
@@ -15,6 +16,7 @@ class ReviewApiModel {
     required this.rating,
     required this.createdAt,
     required this.isOwner,
+    this.averageRating = 0.0,
   });
 
   factory ReviewApiModel.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,9 @@ class ReviewApiModel {
       rating: json["rating"],
       createdAt: DateTime.parse(json["createdAt"]),
       isOwner: json["isOwner"] ?? false,
+      averageRating: json["averageRating"] != null
+          ? (json["averageRating"] as num).toDouble()
+          : 0.0,
     );
   }
 
