@@ -45,6 +45,7 @@ class ApiClient {
         },
       ),
     );
+
     if (kDebugMode) {
       _dio.interceptors.add(
         PrettyDioLogger(
@@ -68,6 +69,7 @@ class ApiClient {
   }) async {
     return _dio.get(path, queryParameters: queryParameters, options: options);
   }
+
   Future<Response> post(
     String path, {
     dynamic data,
@@ -81,6 +83,7 @@ class ApiClient {
       options: options,
     );
   }
+
   Future<Response> put(
     String path, {
     dynamic data,
@@ -94,6 +97,7 @@ class ApiClient {
       options: options,
     );
   }
+
   Future<Response> delete(
     String path, {
     dynamic data,
@@ -107,6 +111,7 @@ class ApiClient {
       options: options,
     );
   }
+
   Future<Response> uploadFile(
     String path, {
     required FormData formData,
@@ -121,33 +126,33 @@ class ApiClient {
     );
   }
 }
+
 class _AuthInterceptor extends Interceptor {
   final _storage = const FlutterSecureStorage();
   static const String _tokenKey = 'auth_token';
+
+  // Endpoints that do NOT need an auth token
+  static const _publicEndpoints = [
+    ApiEndpoints.userLogin,
+    ApiEndpoints.userRegister,
+  ];
 
   @override
   void onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final publicEndpoints = [
-      ApiEndpoints.batches,
-      ApiEndpoints.categories,
-      ApiEndpoints.studentLogin,
-    ];
+    final isPublic = _publicEndpoints.any(
+      (endpoint) => options.path.startsWith(endpoint),
+    );
 
-    final isPublicGet =
-        options.method == 'GET' &&
-        publicEndpoints.any((endpoint) => options.path.startsWith(endpoint));
-
-    final isAuthEndpoint =
-        options.path == ApiEndpoints.studentLogin ||
-        options.path == ApiEndpoints.students;
-
-    if (!isPublicGet && !isAuthEndpoint) {
+    if (!isPublic) {
       final token = await _storage.read(key: _tokenKey);
-      if (token != null) {
+      if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
+        debugPrint('[AuthInterceptor] Token attached to ${options.path}');
+      } else {
+        debugPrint('[AuthInterceptor] ⚠️ No token found for ${options.path}');
       }
     }
 
@@ -157,6 +162,7 @@ class _AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     if (err.response?.statusCode == 401) {
+      debugPrint('[AuthInterceptor] 401 on ${err.requestOptions.path} — clearing token');
       _storage.delete(key: _tokenKey);
     }
     handler.next(err);

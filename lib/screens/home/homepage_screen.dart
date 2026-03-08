@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:nepabite/core/api/api_endpoints.dart';
@@ -5,6 +7,7 @@ import 'package:nepabite/features/recipe/domain/entity/saved_recipe_entity.dart'
 import 'package:nepabite/features/recipe/presentation/viewmodel/recipe_view_model.dart';
 import 'package:nepabite/features/recipe/presentation/viewmodel/saved_recipe_view_model.dart';
 import 'package:nepabite/screens/recipe/recipe_detail_screen.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 import 'cart_screen.dart';
 import 'profile_screen.dart';
@@ -23,8 +26,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String searchQuery = "";
   String _selectedCategory = "All";
 
+  // Shake detection
+  StreamSubscription? _accelSubscription;
+  List _shuffledRecipes = [];
+  bool _isShuffled = false;
+  DateTime _lastShake = DateTime.now();
+
   static const _green = Color(0xFF1EB980);
   static const _greenLight = Color(0xFFE8F8F2);
+  static const double _shakeThreshold = 2.0;
 
   @override
   void initState() {
@@ -33,10 +43,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(recipeViewModelProvider.notifier).fetchRecipes();
       ref.read(savedRecipeProvider.notifier).fetchSavedRecipes();
     });
+    _startShakeDetection();
+  }
+
+  double _lastX = 0, _lastY = 0, _lastZ = 0;
+  bool _firstReading = true;
+
+  void _startShakeDetection() {
+    _accelSubscription = accelerometerEventStream(
+      samplingPeriod: SensorInterval.gameInterval,
+    ).listen((event) {
+      if (_firstReading) {
+        _lastX = event.x; _lastY = event.y; _lastZ = event.z;
+        _firstReading = false;
+        return;
+      }
+      // Use DELTA from last reading — works on both emulator and real device
+      final dx = event.x - _lastX;
+      final dy = event.y - _lastY;
+      final dz = event.z - _lastZ;
+      final delta = sqrt(dx * dx + dy * dy + dz * dz);
+      debugPrint("[Shake] delta: $delta");
+      _lastX = event.x; _lastY = event.y; _lastZ = event.z;
+
+      final now = DateTime.now();
+      if (delta > _shakeThreshold &&
+          now.difference(_lastShake).inMilliseconds > 1000) {
+        _lastShake = now;
+        _onShake();
+      }
+    });
+  }
+
+  void _onShake() {
+    final recipes = ref.read(recipeViewModelProvider);
+    if (recipes.isEmpty) return;
+    final shuffled = [...recipes]..shuffle(Random());
+    setState(() {
+      _shuffledRecipes = shuffled;
+      _isShuffled = true;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(children: [
+          Text("🎲", style: TextStyle(fontSize: 16)),
+          SizedBox(width: 8),
+          Text("Recipes shuffled!", style: TextStyle(color: Colors.white)),
+        ]),
+        backgroundColor: _green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   @override
   void dispose() {
+    _accelSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -106,17 +170,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHomeScreen(List recipes) {
+    // Use shuffled list if shake was triggered, otherwise original
+    final displayRecipes = _isShuffled ? _shuffledRecipes : recipes;
+
     // Categories
     final categories = ["All"];
-    for (final r in recipes) {
+    for (final r in displayRecipes) {
       final cat = r.category ?? "";
       if (cat.isNotEmpty && !categories.contains(cat)) categories.add(cat);
     }
 
     // Top rated recipe — use fold to avoid type mismatch with reduce
     dynamic featuredRecipe;
-    if (recipes.isNotEmpty) {
-      featuredRecipe = recipes.fold(recipes.first, (dynamic best, dynamic r) {
+    if (displayRecipes.isNotEmpty) {
+      featuredRecipe = displayRecipes.fold(displayRecipes.first, (dynamic best, dynamic r) {
         final bestRating = (best.averageRating ?? 0.0) as double;
         final rRating = (r.averageRating ?? 0.0) as double;
         return rRating > bestRating ? r : best;
@@ -124,7 +191,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     // Popular = top 5 by rating (excluding featured)
-    final popular = [...recipes]
+    final popular = [...displayRecipes]
       ..sort((dynamic a, dynamic b) => ((b.averageRating ?? 0.0) as double)
           .compareTo((a.averageRating ?? 0.0) as double));
     final popularList = popular
@@ -132,8 +199,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         .take(5)
         .toList();
 
-    // Filtered for grid
-    final filteredRecipes = recipes.where((recipe) {
+    // Filtered for grid — uses shuffled list if shaken
+    final filteredRecipes = displayRecipes.where((recipe) {
       final matchesSearch = recipe.title.toLowerCase().contains(searchQuery);
       final matchesCategory =
           _selectedCategory == "All" || recipe.category == _selectedCategory;
@@ -172,15 +239,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ],
                       ),
-                      Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: _greenLight,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.notifications_none_rounded,
-                            color: _green, size: 22),
+                      Row(
+                        children: [
+                          // Shake test button (visible in debug mode)
+                          GestureDetector(
+                            onTap: _onShake,
+                            child: Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: _greenLight,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Center(
+                                child: Text("🎲", style: TextStyle(fontSize: 20)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: _greenLight,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.notifications_none_rounded,
+                                color: _green, size: 22),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -367,13 +454,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        "All Recipes",
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                      Row(
+                        children: [
+                          const Text(
+                            "All Recipes",
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          if (_isShuffled) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => setState(() => _isShuffled = false),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _greenLight,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Text("🎲", style: TextStyle(fontSize: 11)),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Shuffled · Reset",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: _green,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       Text(
                         "${filteredRecipes.length} found",
@@ -388,7 +506,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
 
           // ── GRID ──
-          recipes.isEmpty
+          displayRecipes.isEmpty
               ? const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator(color: _green)),
                 )
