@@ -2,7 +2,8 @@ class ApiEndpoints {
   ApiEndpoints._();
 
   // Root server (used for images /uploads/... and also for API base)
-  static const String serverUrl = 'http://10.0.2.2:5050';
+//  static const String serverUrl = 'http://192.168.1.247:5050';
+ static const String serverUrl = 'http://10.0.2.2:5050';
 
   // API base URL
   static const String baseUrl = '$serverUrl/api';

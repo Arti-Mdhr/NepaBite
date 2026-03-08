@@ -26,7 +26,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String searchQuery = "";
   String _selectedCategory = "All";
 
-  // Shake detection
   StreamSubscription? _accelSubscription;
   List _shuffledRecipes = [];
   bool _isShuffled = false;
@@ -35,6 +34,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   static const _green = Color(0xFF1EB980);
   static const _greenLight = Color(0xFFE8F8F2);
   static const double _shakeThreshold = 2.0;
+
+  double _lastX = 0, _lastY = 0, _lastZ = 0;
+  bool _firstReading = true;
+
+  // ── Responsive helpers ──
+  bool _isTablet(BuildContext context) =>
+      MediaQuery.of(context).size.shortestSide >= 600;
+
+  int _gridColumns(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) return 4;
+    if (width >= 600) return 3;
+    return 2;
+  }
+
+  double _gridAspectRatio(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) return 0.80;
+    if (width >= 600) return 0.78;
+    return 0.75;
+  }
+
+  double _featuredCardHeight(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) return 320;
+    if (width >= 600) return 260;
+    return 200;
+  }
+
+  double _popularCardWidth(BuildContext context) {
+    if (_isTablet(context)) return 200;
+    return 150;
+  }
+
+  double _popularCardHeight(BuildContext context) {
+    if (_isTablet(context)) return 260;
+    return 210;
+  }
+
+  double _popularImageHeight(BuildContext context) {
+    if (_isTablet(context)) return 150;
+    return 110;
+  }
 
   @override
   void initState() {
@@ -46,9 +88,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     _startShakeDetection();
   }
 
-  double _lastX = 0, _lastY = 0, _lastZ = 0;
-  bool _firstReading = true;
-
   void _startShakeDetection() {
     _accelSubscription = accelerometerEventStream(
       samplingPeriod: SensorInterval.gameInterval,
@@ -58,7 +97,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _firstReading = false;
         return;
       }
-      // Use DELTA from last reading — works on both emulator and real device
       final dx = event.x - _lastX;
       final dy = event.y - _lastY;
       final dz = event.z - _lastZ;
@@ -108,6 +146,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final recipes = ref.watch(recipeViewModelProvider);
+    final isTablet = _isTablet(context);
 
     final screens = [
       _buildHomeScreen(recipes),
@@ -139,8 +178,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           showSelectedLabels: true,
           type: BottomNavigationBarType.fixed,
           elevation: 0,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
+          selectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.w600, fontSize: isTablet ? 13 : 11),
+          unselectedLabelStyle: TextStyle(fontSize: isTablet ? 13 : 11),
           onTap: (index) => setState(() => _selectedIndex = index),
           items: const [
             BottomNavigationBarItem(
@@ -170,36 +210,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildHomeScreen(List recipes) {
-    // Use shuffled list if shake was triggered, otherwise original
     final displayRecipes = _isShuffled ? _shuffledRecipes : recipes;
+    final isTablet = _isTablet(context);
+    final screenWidth = MediaQuery.of(context).size.width;
 
-    // Categories
+    // Responsive horizontal padding
+    final hPad = isTablet ? screenWidth * 0.04 : 20.0;
+
     final categories = ["All"];
     for (final r in displayRecipes) {
       final cat = r.category ?? "";
       if (cat.isNotEmpty && !categories.contains(cat)) categories.add(cat);
     }
 
-    // Top rated recipe — use fold to avoid type mismatch with reduce
     dynamic featuredRecipe;
     if (displayRecipes.isNotEmpty) {
-      featuredRecipe = displayRecipes.fold(displayRecipes.first, (dynamic best, dynamic r) {
+      featuredRecipe = displayRecipes.fold(displayRecipes.first,
+          (dynamic best, dynamic r) {
         final bestRating = (best.averageRating ?? 0.0) as double;
         final rRating = (r.averageRating ?? 0.0) as double;
         return rRating > bestRating ? r : best;
       });
     }
 
-    // Popular = top 5 by rating (excluding featured)
     final popular = [...displayRecipes]
       ..sort((dynamic a, dynamic b) => ((b.averageRating ?? 0.0) as double)
           .compareTo((a.averageRating ?? 0.0) as double));
     final popularList = popular
         .where((r) => featuredRecipe == null || r.id != featuredRecipe.id)
-        .take(5)
+        .take(isTablet ? 8 : 5)
         .toList();
 
-    // Filtered for grid — uses shuffled list if shaken
     final filteredRecipes = displayRecipes.where((recipe) {
       final matchesSearch = recipe.title.toLowerCase().contains(searchQuery);
       final matchesCategory =
@@ -210,24 +251,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return SafeArea(
       child: CustomScrollView(
         slivers: [
-
-          // ── HEADER + SEARCH ──
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── HEADER ──
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             "Namaste 👋",
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: isTablet ? 30 : 24,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
@@ -235,37 +275,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           const SizedBox(height: 2),
                           Text(
                             "What are you cooking today?",
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+                            style: TextStyle(
+                                fontSize: isTablet ? 15 : 13,
+                                color: Colors.grey.shade500),
                           ),
                         ],
                       ),
                       Row(
                         children: [
-                          // Shake test button (visible in debug mode)
                           GestureDetector(
                             onTap: _onShake,
                             child: Container(
-                              width: 42,
-                              height: 42,
+                              width: isTablet ? 52 : 42,
+                              height: isTablet ? 52 : 42,
                               decoration: BoxDecoration(
                                 color: _greenLight,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Center(
-                                child: Text("🎲", style: TextStyle(fontSize: 20)),
+                              child: Center(
+                                child: Text("🎲",
+                                    style: TextStyle(
+                                        fontSize: isTablet ? 26 : 20)),
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            width: 42,
-                            height: 42,
+                            width: isTablet ? 52 : 42,
+                            height: isTablet ? 52 : 42,
                             decoration: BoxDecoration(
                               color: _greenLight,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.notifications_none_rounded,
-                                color: _green, size: 22),
+                            child: Icon(Icons.notifications_none_rounded,
+                                color: _green, size: isTablet ? 28 : 22),
                           ),
                         ],
                       ),
@@ -275,11 +318,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 const SizedBox(height: 18),
 
-                // Search
+                // ── SEARCH ──
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
                   child: Container(
-                    height: 48,
+                    height: isTablet ? 56 : 48,
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),
@@ -293,17 +336,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     child: Row(
                       children: [
-                        const SizedBox(width: 14),
-                        Icon(Icons.search_rounded, color: Colors.grey.shade400, size: 20),
+                        SizedBox(width: isTablet ? 18 : 14),
+                        Icon(Icons.search_rounded,
+                            color: Colors.grey.shade400,
+                            size: isTablet ? 24 : 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: TextField(
                             controller: _searchController,
-                            onChanged: (v) => setState(() => searchQuery = v.toLowerCase()),
-                            style: const TextStyle(fontSize: 14),
+                            onChanged: (v) =>
+                                setState(() => searchQuery = v.toLowerCase()),
+                            style: TextStyle(fontSize: isTablet ? 16 : 14),
                             decoration: InputDecoration(
                               hintText: "Search recipes...",
-                              hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                              hintStyle: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: isTablet ? 16 : 14),
                               border: InputBorder.none,
                               isDense: true,
                             ),
@@ -318,7 +366,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Padding(
                               padding: const EdgeInsets.only(right: 12),
                               child: Icon(Icons.close_rounded,
-                                  color: Colors.grey.shade400, size: 18),
+                                  color: Colors.grey.shade400,
+                                  size: isTablet ? 22 : 18),
                             ),
                           ),
                       ],
@@ -328,14 +377,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 const SizedBox(height: 24),
 
-                // ── FEATURED / TOP RATED ──
+                // ── FEATURED ──
                 if (featuredRecipe != null && searchQuery.isEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: hPad),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFFF3CD),
                             borderRadius: BorderRadius.circular(8),
@@ -360,21 +410,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildFeaturedCard(featuredRecipe),
+                  _buildFeaturedCard(featuredRecipe, hPad),
                   const SizedBox(height: 24),
                 ],
 
                 // ── POPULAR ──
                 if (popularList.isNotEmpty && searchQuery.isEmpty) ...[
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: EdgeInsets.symmetric(horizontal: hPad),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           "Popular",
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: isTablet ? 20 : 17,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),
@@ -382,7 +432,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Text(
                           "See all",
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: isTablet ? 15 : 13,
                             color: Colors.grey.shade500,
                             fontWeight: FontWeight.w500,
                           ),
@@ -392,13 +442,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
-                    height: 210,
+                    height: _popularCardHeight(context),
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: EdgeInsets.symmetric(horizontal: hPad),
                       itemCount: popularList.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (_, i) => _buildPopularCard(popularList[i]),
+                      itemBuilder: (_, i) =>
+                          _buildPopularCard(popularList[i]),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -407,20 +458,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 // ── CATEGORY CHIPS ──
                 if (categories.length > 1) ...[
                   SizedBox(
-                    height: 36,
+                    height: isTablet ? 44 : 36,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: EdgeInsets.symmetric(horizontal: hPad),
                       itemCount: categories.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 8),
                       itemBuilder: (_, index) {
                         final cat = categories[index];
                         final isSelected = _selectedCategory == cat;
                         return GestureDetector(
-                          onTap: () => setState(() => _selectedCategory = cat),
+                          onTap: () =>
+                              setState(() => _selectedCategory = cat),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 20 : 16,
+                                vertical: isTablet ? 10 : 8),
                             decoration: BoxDecoration(
                               color: isSelected ? _green : Colors.white,
                               borderRadius: BorderRadius.circular(20),
@@ -435,9 +489,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Text(
                               cat,
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: isTablet ? 14 : 12,
                                 fontWeight: FontWeight.w600,
-                                color: isSelected ? Colors.white : Colors.grey.shade600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey.shade600,
                               ),
                             ),
                           ),
@@ -450,16 +506,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 // ── ALL RECIPES LABEL ──
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(
                         children: [
-                          const Text(
+                          Text(
                             "All Recipes",
                             style: TextStyle(
-                              fontSize: 17,
+                              fontSize: isTablet ? 20 : 17,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
                             ),
@@ -467,16 +523,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           if (_isShuffled) ...[
                             const SizedBox(width: 8),
                             GestureDetector(
-                              onTap: () => setState(() => _isShuffled = false),
+                              onTap: () =>
+                                  setState(() => _isShuffled = false),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
                                 decoration: BoxDecoration(
                                   color: _greenLight,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Text("🎲", style: TextStyle(fontSize: 11)),
+                                    Text("🎲",
+                                        style: TextStyle(fontSize: 11)),
                                     SizedBox(width: 4),
                                     Text(
                                       "Shuffled · Reset",
@@ -495,7 +554,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       Text(
                         "${filteredRecipes.length} found",
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                        style: TextStyle(
+                            fontSize: isTablet ? 14 : 12,
+                            color: Colors.grey.shade500),
                       ),
                     ],
                   ),
@@ -508,7 +569,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // ── GRID ──
           displayRecipes.isEmpty
               ? const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator(color: _green)),
+                  child:
+                      Center(child: CircularProgressIndicator(color: _green)),
                 )
               : filteredRecipes.isEmpty
                   ? SliverFillRemaining(
@@ -542,17 +604,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     )
                   : SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      padding: EdgeInsets.fromLTRB(
+                          _isTablet(context) ? 16 : 16, 0,
+                          _isTablet(context) ? 16 : 16, 24),
                       sliver: SliverGrid(
                         delegate: SliverChildBuilderDelegate(
-                          (_, index) => _buildRecipeCard(filteredRecipes[index]),
+                          (_, index) =>
+                              _buildRecipeCard(filteredRecipes[index]),
                           childCount: filteredRecipes.length,
                         ),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                        gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _gridColumns(context),
                           crossAxisSpacing: 12,
                           mainAxisSpacing: 12,
-                          childAspectRatio: 0.75,
+                          childAspectRatio: _gridAspectRatio(context),
                         ),
                       ),
                     ),
@@ -562,21 +628,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // ── FEATURED HERO CARD ──
-  Widget _buildFeaturedCard(dynamic recipe) {
+  Widget _buildFeaturedCard(dynamic recipe, double hPad) {
     final avg = (recipe.averageRating ?? 0.0).toDouble();
+    final isTablet = _isTablet(context);
     ref.watch(savedRecipeProvider);
     final notifier = ref.read(savedRecipeProvider.notifier);
     final isSaved = notifier.isSaved(recipe.id);
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe)),
-      ),
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe))),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.symmetric(horizontal: hPad),
         child: Container(
-          height: 200,
+          height: _featuredCardHeight(context),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
@@ -592,16 +657,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Image
                 recipe.image != null
                     ? Image.network(
                         ApiEndpoints.fileUrl(recipe.image),
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(color: _greenLight),
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: _greenLight),
                       )
                     : Container(color: _greenLight),
-
-                // Gradient overlay
                 Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -615,8 +678,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ),
-
-                // Bookmark top right
                 Positioned(
                   top: 12,
                   right: 12,
@@ -629,15 +690,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        isSaved
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
                         color: _green,
-                        size: 18,
+                        size: isTablet ? 22 : 18,
                       ),
                     ),
                   ),
                 ),
-
-                // Info bottom
                 Positioned(
                   left: 16,
                   right: 16,
@@ -645,7 +706,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Rating badge
                       Row(
                         children: [
                           Container(
@@ -684,10 +744,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               child: Text(
                                 recipe.category,
                                 style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600),
                               ),
                             ),
                           ],
@@ -696,9 +755,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 8),
                       Text(
                         recipe.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: isTablet ? 24 : 18,
                           fontWeight: FontWeight.bold,
                         ),
                         maxLines: 2,
@@ -715,20 +774,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // ── POPULAR HORIZONTAL CARD ──
+  // ── POPULAR CARD ──
   Widget _buildPopularCard(dynamic recipe) {
     final avg = (recipe.averageRating ?? 0.0).toDouble();
+    final isTablet = _isTablet(context);
     ref.watch(savedRecipeProvider);
     final notifier = ref.read(savedRecipeProvider.notifier);
     final isSaved = notifier.isSaved(recipe.id);
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe)),
-      ),
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe))),
       child: Container(
-        width: 150,
+        width: _popularCardWidth(context),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -746,42 +804,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
                   child: recipe.image != null
                       ? Image.network(
                           ApiEndpoints.fileUrl(recipe.image),
-                          height: 110,
-                          width: 150,
+                          height: _popularImageHeight(context),
+                          width: _popularCardWidth(context),
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
-                            height: 110,
+                            height: _popularImageHeight(context),
                             color: _greenLight,
                             child: const Center(
-                              child: Icon(Icons.fastfood_rounded, color: _green, size: 30),
+                              child: Icon(Icons.fastfood_rounded,
+                                  color: _green, size: 30),
                             ),
                           ),
                         )
                       : Container(
-                          height: 110,
+                          height: _popularImageHeight(context),
                           color: _greenLight,
                           child: const Center(
-                            child: Icon(Icons.fastfood_rounded, color: _green, size: 30),
+                            child: Icon(Icons.fastfood_rounded,
+                                color: _green, size: 30),
                           ),
                         ),
                 ),
-                // Rating chip on image
                 Positioned(
                   top: 8,
                   left: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.55),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.star_rounded, color: Colors.amber, size: 11),
+                        const Icon(Icons.star_rounded,
+                            color: Colors.amber, size: 11),
                         const SizedBox(width: 3),
                         Text(
                           avg > 0 ? avg.toStringAsFixed(1) : "New",
@@ -795,7 +857,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ),
-                // Bookmark
                 Positioned(
                   top: 6,
                   right: 6,
@@ -808,7 +869,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         borderRadius: BorderRadius.circular(7),
                       ),
                       child: Icon(
-                        isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        isSaved
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
                         color: _green,
                         size: 14,
                       ),
@@ -826,17 +889,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     recipe.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
+                    style: TextStyle(
+                      fontSize: isTablet ? 14 : 12,
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
                     ),
                   ),
-                  if (recipe.category != null && (recipe.category as String).isNotEmpty) ...[
+                  if (recipe.category != null &&
+                      (recipe.category as String).isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(
                       recipe.category,
-                      style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
+                      style: TextStyle(
+                          fontSize: isTablet ? 12 : 10,
+                          color: Colors.grey.shade500),
                     ),
                   ],
                 ],
@@ -851,15 +917,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   // ── GRID CARD ──
   Widget _buildRecipeCard(dynamic recipe) {
     final avg = (recipe.averageRating ?? 0.0).toDouble();
+    final isTablet = _isTablet(context);
     ref.watch(savedRecipeProvider);
     final notifier = ref.read(savedRecipeProvider.notifier);
     final isSaved = notifier.isSaved(recipe.id);
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe)),
-      ),
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe))),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -878,26 +943,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(18)),
                   child: recipe.image != null
                       ? Image.network(
                           ApiEndpoints.fileUrl(recipe.image),
-                          height: 120,
+                          height: isTablet ? 160 : 120,
                           width: double.infinity,
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, ___) => Container(
-                            height: 120,
+                            height: isTablet ? 160 : 120,
                             color: _greenLight,
                             child: const Center(
-                              child: Icon(Icons.fastfood_rounded, size: 36, color: _green),
+                              child: Icon(Icons.fastfood_rounded,
+                                  size: 36, color: _green),
                             ),
                           ),
                         )
                       : Container(
-                          height: 120,
+                          height: isTablet ? 160 : 120,
                           color: _greenLight,
                           child: const Center(
-                            child: Icon(Icons.fastfood_rounded, size: 36, color: _green),
+                            child: Icon(Icons.fastfood_rounded,
+                                size: 36, color: _green),
                           ),
                         ),
                 ),
@@ -920,7 +988,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ],
                       ),
                       child: Icon(
-                        isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                        isSaved
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
                         color: _green,
                         size: 16,
                       ),
@@ -938,24 +1008,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     recipe.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 13,
+                    style: TextStyle(
+                      fontSize: isTablet ? 15 : 13,
                       fontWeight: FontWeight.w700,
                       color: Colors.black87,
                     ),
                   ),
-                  if (recipe.category != null && (recipe.category as String).isNotEmpty) ...[
+                  if (recipe.category != null &&
+                      (recipe.category as String).isNotEmpty) ...[
                     const SizedBox(height: 5),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: _greenLight,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         recipe.category!,
-                        style: const TextStyle(
-                          fontSize: 10,
+                        style: TextStyle(
+                          fontSize: isTablet ? 12 : 10,
                           color: _green,
                           fontWeight: FontWeight.w600,
                         ),
@@ -985,7 +1057,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ]),
           backgroundColor: Colors.redAccent,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     } else {
@@ -996,7 +1069,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           image: recipe.image,
           category: recipe.category,
           description: recipe.description,
-          ingredients: List<Map<String, dynamic>>.from(recipe.ingredients ?? []),
+          ingredients:
+              List<Map<String, dynamic>>.from(recipe.ingredients ?? []),
           instructions: List<String>.from(recipe.instructions ?? []),
         ),
       );
@@ -1009,20 +1083,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ]),
           backgroundColor: _green,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
     }
   }
 
   Widget _buildRatingRow(double avg) {
+    final isTablet = _isTablet(context);
     if (avg == 0) {
       return Row(
         children: [
-          Icon(Icons.star_border_rounded, size: 12, color: Colors.grey.shade400),
+          Icon(Icons.star_border_rounded,
+              size: 12, color: Colors.grey.shade400),
           const SizedBox(width: 3),
           Text("No ratings",
-              style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+              style: TextStyle(
+                  fontSize: isTablet ? 12 : 10, color: Colors.grey.shade400)),
         ],
       );
     }
@@ -1030,18 +1108,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       children: [
         ...List.generate(5, (i) {
           if (avg >= i + 1) {
-            return const Icon(Icons.star_rounded, size: 12, color: _green);
+            return Icon(Icons.star_rounded,
+                size: isTablet ? 14 : 12, color: _green);
           } else if (avg >= i + 0.5) {
-            return const Icon(Icons.star_half_rounded, size: 12, color: _green);
+            return Icon(Icons.star_half_rounded,
+                size: isTablet ? 14 : 12, color: _green);
           } else {
-            return Icon(Icons.star_border_rounded, size: 12, color: Colors.grey.shade300);
+            return Icon(Icons.star_border_rounded,
+                size: isTablet ? 14 : 12, color: Colors.grey.shade300);
           }
         }),
         const SizedBox(width: 4),
         Text(
           avg.toStringAsFixed(1),
-          style: const TextStyle(
-            fontSize: 10,
+          style: TextStyle(
+            fontSize: isTablet ? 12 : 10,
             fontWeight: FontWeight.w700,
             color: _green,
           ),
