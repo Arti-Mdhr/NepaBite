@@ -2,7 +2,8 @@ class ApiEndpoints {
   ApiEndpoints._();
 
   // Root server (used for images /uploads/... and also for API base)
-  static const String serverUrl = 'http://10.0.2.2:5050';
+//  static const String serverUrl = 'http://192.168.1.247:5050';
+ static const String serverUrl = 'http://10.0.2.2:5050';
 
   // API base URL
   static const String baseUrl = '$serverUrl/api';
@@ -58,4 +59,20 @@ class ApiEndpoints {
   static String commentById(String id) => '/comments/$id';
   static String commentsByItem(String itemId) => '/comments/item/$itemId';
   static String commentLike(String id) => '/comments/$id/like';
+
+
+
+  // ================= RECIPES =================
+  static const String recipes = '/recipes';
+  static String recipeById(String id) => '/recipes/$id';
+
+  // ================= CART =================
+  static const String cart = '/cart';
+
+  // ================= SAVED RECIPES =================
+  static const String savedRecipes = '/saved-recipes';
+  static const String saveRecipe = '/saved-recipes/save';
+  static String removeSavedRecipe(String id) => '/saved-recipes/remove/$id';
+
 }
+

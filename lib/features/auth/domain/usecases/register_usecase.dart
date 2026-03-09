@@ -28,7 +28,6 @@ class RegisterUsecaseParams extends Equatable {
   List<Object?> get props => [fullName, email, password, confirmPassword, phoneNumber];
 }
 
-// Provider for register usecase.
 final registerUsecaseProvider = Provider<RegisterUsecase>((ref) {
   return RegisterUsecase(authRepository: ref.read(authRepositoryProvider));
 });

@@ -1,276 +1,1133 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:nepabite/core/api/api_endpoints.dart';
+import 'package:nepabite/features/recipe/domain/entity/saved_recipe_entity.dart';
+import 'package:nepabite/features/recipe/presentation/viewmodel/recipe_view_model.dart';
+import 'package:nepabite/features/recipe/presentation/viewmodel/saved_recipe_view_model.dart';
+import 'package:nepabite/screens/recipe/recipe_detail_screen.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+
 import 'cart_screen.dart';
 import 'profile_screen.dart';
 import 'saved_recipe_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
+  String searchQuery = "";
+  String _selectedCategory = "All";
 
-  final List<Map<String, String>> recipes = [
-    {
-      "title": "Yomari (Khuwa Filling)",
-      "time": "40 min",
-      "image": "assets/images/yomari.png",
-    },
-    {
-      "title": "Bara (Wo)",
-      "time": "10 mins",
-      "image": "assets/images/bara.png",
-    },
-  ];
+  StreamSubscription? _accelSubscription;
+  List _shuffledRecipes = [];
+  bool _isShuffled = false;
+  DateTime _lastShake = DateTime.now();
 
-  final List<Map<String, String>> newRecipes = [
-    {
-      "title": "MO:MO",
-      "image": "assets/images/momo.png",
-    },
-    {
-      "title": "Chatamari",
-      "image": "assets/images/chataamari.png",
-    },
-  ];
+  static const _green = Color(0xFF1EB980);
+  static const _greenLight = Color(0xFFE8F8F2);
+  static const double _shakeThreshold = 2.0;
 
-  int selectedCategory = 0;
+  double _lastX = 0, _lastY = 0, _lastZ = 0;
+  bool _firstReading = true;
 
-  late final List<Widget> lstScreens = [ _buildHomeScreen(),
-    const CartScreen(),
-    const SavedRecipeScreen(),
-    const ProfileScreen(),
-  ];
+  // ── Responsive helpers ──
+  bool _isTablet(BuildContext context) =>
+      MediaQuery.of(context).size.shortestSide >= 600;
+
+  int _gridColumns(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) return 4;
+    if (width >= 600) return 3;
+    return 2;
+  }
+
+  double _gridAspectRatio(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) return 0.80;
+    if (width >= 600) return 0.78;
+    return 0.75;
+  }
+
+  double _featuredCardHeight(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) return 320;
+    if (width >= 600) return 260;
+    return 200;
+  }
+
+  double _popularCardWidth(BuildContext context) {
+    if (_isTablet(context)) return 200;
+    return 150;
+  }
+
+  double _popularCardHeight(BuildContext context) {
+    if (_isTablet(context)) return 260;
+    return 210;
+  }
+
+  double _popularImageHeight(BuildContext context) {
+    if (_isTablet(context)) return 150;
+    return 110;
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: lstScreens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        selectedItemColor: const Color(0xFF1EB980), 
-        unselectedItemColor: Colors.grey,  
-        currentIndex: _selectedIndex,
-        showUnselectedLabels: false,
-        type: BottomNavigationBarType.fixed,  
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            label: "Home",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            label: "Cart",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_border),
-            label: "Saved",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "Profile",
-          ),
-        ],
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(recipeViewModelProvider.notifier).fetchRecipes();
+      ref.read(savedRecipeProvider.notifier).fetchSavedRecipes();
+    });
+    _startShakeDetection();
+  }
+
+  void _startShakeDetection() {
+    _accelSubscription = accelerometerEventStream(
+      samplingPeriod: SensorInterval.gameInterval,
+    ).listen((event) {
+      if (_firstReading) {
+        _lastX = event.x; _lastY = event.y; _lastZ = event.z;
+        _firstReading = false;
+        return;
+      }
+      final dx = event.x - _lastX;
+      final dy = event.y - _lastY;
+      final dz = event.z - _lastZ;
+      final delta = sqrt(dx * dx + dy * dy + dz * dz);
+      debugPrint("[Shake] delta: $delta");
+      _lastX = event.x; _lastY = event.y; _lastZ = event.z;
+
+      final now = DateTime.now();
+      if (delta > _shakeThreshold &&
+          now.difference(_lastShake).inMilliseconds > 1000) {
+        _lastShake = now;
+        _onShake();
+      }
+    });
+  }
+
+  void _onShake() {
+    final recipes = ref.read(recipeViewModelProvider);
+    if (recipes.isEmpty) return;
+    final shuffled = [...recipes]..shuffle(Random());
+    setState(() {
+      _shuffledRecipes = shuffled;
+      _isShuffled = true;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Row(children: [
+          Text("🎲", style: TextStyle(fontSize: 16)),
+          SizedBox(width: 8),
+          Text("Recipes shuffled!", style: TextStyle(color: Colors.white)),
+        ]),
+        backgroundColor: _green,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
-  Widget _buildHomeScreen() {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 6),
-              child: Text(
-                "Namaste,",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+
+  @override
+  void dispose() {
+    _accelSubscription?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final recipes = ref.watch(recipeViewModelProvider);
+    final isTablet = _isTablet(context);
+
+    final screens = [
+      _buildHomeScreen(recipes),
+      const CartScreen(),
+      const SavedRecipeScreen(),
+      const ProfileScreen(),
+    ];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7FAF8),
+      body: screens[_selectedIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                "What are you cooking today?",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
-              ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          backgroundColor: Colors.white,
+          selectedItemColor: _green,
+          unselectedItemColor: Colors.grey.shade400,
+          currentIndex: _selectedIndex,
+          showUnselectedLabels: true,
+          showSelectedLabels: true,
+          type: BottomNavigationBarType.fixed,
+          elevation: 0,
+          selectedLabelStyle: TextStyle(
+              fontWeight: FontWeight.w600, fontSize: isTablet ? 13 : 11),
+          unselectedLabelStyle: TextStyle(fontSize: isTablet ? 13 : 11),
+          onTap: (index) => setState(() => _selectedIndex = index),
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_outlined),
+              activeIcon: Icon(Icons.home_rounded),
+              label: "Home",
             ),
-            const SizedBox(height: 18),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 45,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.search, color: Colors.black54),
-                          SizedBox(width: 10),
-                          Text(
-                            "Search recipe",
-                            style: TextStyle(color: Colors.black54),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    height: 45,
-                    width: 45,
-                    decoration: BoxDecoration(
-                      color: Color(0xFF1EB980),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.tune, color: Colors.white),
-                  ),
-                ],
-              ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_cart_outlined),
+              activeIcon: Icon(Icons.shopping_cart_rounded),
+              label: "Cart",
             ),
-            const SizedBox(height: 18),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _buildChip("All", 0),
-                  _buildChip("Nepali", 1),
-                  _buildChip("Newari", 2),
-                  _buildChip("Street Food", 3),
-                ],
-              ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.bookmark_border_rounded),
+              activeIcon: Icon(Icons.bookmark_rounded),
+              label: "Saved",
             ),
-            const SizedBox(height: 22),
-            _buildRecipeSection("Popular Recipes", recipes),
-            const SizedBox(height: 20),
-            _buildRecipeSection("New Recipes", newRecipes),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person_rounded),
+              label: "Profile",
+            ),
           ],
         ),
       ),
     );
   }
-  Widget _buildRecipeSection(String title, List<Map<String, String>> recipeList) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 15),
-        SizedBox(
-          height: 210,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: recipeList.length,
-            itemBuilder: (context, index) {
-              return _buildRecipeCard(recipeList[index]);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-  Widget _buildChip(String text, int index) {
-    bool isSelected = selectedCategory == index;
 
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      child: GestureDetector(
-        onTap: () => setState(() => selectedCategory = index),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF1EB980) : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected
-                  ? const Color(0xFF1EB980)
-                  : Colors.grey.shade300,
-            ),
-          ),
-          child: Text(
-            text,
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              color: isSelected ? Colors.white : Colors.black54,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-  Widget _buildRecipeCard(Map<String, String> recipe) {
-    return Container(
-      width: 175,
-      margin: const EdgeInsets.only(left: 20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        color: Colors.grey.shade100,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-            child: Image.asset(
-              recipe["image"]!,
-              height: 135,
-              width: 175,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
+  Widget _buildHomeScreen(List recipes) {
+    final displayRecipes = _isShuffled ? _shuffledRecipes : recipes;
+    final isTablet = _isTablet(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Responsive horizontal padding
+    final hPad = isTablet ? screenWidth * 0.04 : 20.0;
+
+    final categories = ["All"];
+    for (final r in displayRecipes) {
+      final cat = r.category ?? "";
+      if (cat.isNotEmpty && !categories.contains(cat)) categories.add(cat);
+    }
+
+    dynamic featuredRecipe;
+    if (displayRecipes.isNotEmpty) {
+      featuredRecipe = displayRecipes.fold(displayRecipes.first,
+          (dynamic best, dynamic r) {
+        final bestRating = (best.averageRating ?? 0.0) as double;
+        final rRating = (r.averageRating ?? 0.0) as double;
+        return rRating > bestRating ? r : best;
+      });
+    }
+
+    final popular = [...displayRecipes]
+      ..sort((dynamic a, dynamic b) => ((b.averageRating ?? 0.0) as double)
+          .compareTo((a.averageRating ?? 0.0) as double));
+    final popularList = popular
+        .where((r) => featuredRecipe == null || r.id != featuredRecipe.id)
+        .take(isTablet ? 8 : 5)
+        .toList();
+
+    final filteredRecipes = displayRecipes.where((recipe) {
+      final matchesSearch = recipe.title.toLowerCase().contains(searchQuery);
+      final matchesCategory =
+          _selectedCategory == "All" || recipe.category == _selectedCategory;
+      return matchesSearch && matchesCategory;
+    }).toList();
+
+    return SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  recipe["title"]!,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                // ── HEADER ──
+                Padding(
+                  padding: EdgeInsets.fromLTRB(hPad, 20, hPad, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Namaste 👋",
+                            style: TextStyle(
+                              fontSize: isTablet ? 30 : 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "What are you cooking today?",
+                            style: TextStyle(
+                                fontSize: isTablet ? 15 : 13,
+                                color: Colors.grey.shade500),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _onShake,
+                            child: Container(
+                              width: isTablet ? 52 : 42,
+                              height: isTablet ? 52 : 42,
+                              decoration: BoxDecoration(
+                                color: _greenLight,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text("🎲",
+                                    style: TextStyle(
+                                        fontSize: isTablet ? 26 : 20)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: isTablet ? 52 : 42,
+                            height: isTablet ? 52 : 42,
+                            decoration: BoxDecoration(
+                              color: _greenLight,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(Icons.notifications_none_rounded,
+                                color: _green, size: isTablet ? 28 : 22),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  "Time: ${recipe['time']}",
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.black45,
+
+                const SizedBox(height: 18),
+
+                // ── SEARCH ──
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  child: Container(
+                    height: isTablet ? 56 : 48,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(width: isTablet ? 18 : 14),
+                        Icon(Icons.search_rounded,
+                            color: Colors.grey.shade400,
+                            size: isTablet ? 24 : 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (v) =>
+                                setState(() => searchQuery = v.toLowerCase()),
+                            style: TextStyle(fontSize: isTablet ? 16 : 14),
+                            decoration: InputDecoration(
+                              hintText: "Search recipes...",
+                              hintStyle: TextStyle(
+                                  color: Colors.grey.shade400,
+                                  fontSize: isTablet ? 16 : 14),
+                              border: InputBorder.none,
+                              isDense: true,
+                            ),
+                          ),
+                        ),
+                        if (searchQuery.isNotEmpty)
+                          GestureDetector(
+                            onTap: () {
+                              _searchController.clear();
+                              setState(() => searchQuery = "");
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: Icon(Icons.close_rounded,
+                                  color: Colors.grey.shade400,
+                                  size: isTablet ? 22 : 18),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── FEATURED ──
+                if (featuredRecipe != null && searchQuery.isEmpty) ...[
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: hPad),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3CD),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.emoji_events_rounded,
+                                  color: Color(0xFFE6A817), size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                "Top Rated",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFE6A817),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  _buildFeaturedCard(featuredRecipe, hPad),
+                  const SizedBox(height: 24),
+                ],
+
+                // ── POPULAR ──
+                if (popularList.isNotEmpty && searchQuery.isEmpty) ...[
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: hPad),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Popular",
+                          style: TextStyle(
+                            fontSize: isTablet ? 20 : 17,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Text(
+                          "See all",
+                          style: TextStyle(
+                            fontSize: isTablet ? 15 : 13,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: _popularCardHeight(context),
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: hPad),
+                      itemCount: popularList.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (_, i) =>
+                          _buildPopularCard(popularList[i]),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // ── CATEGORY CHIPS ──
+                if (categories.length > 1) ...[
+                  SizedBox(
+                    height: isTablet ? 44 : 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: hPad),
+                      itemCount: categories.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (_, index) {
+                        final cat = categories[index];
+                        final isSelected = _selectedCategory == cat;
+                        return GestureDetector(
+                          onTap: () =>
+                              setState(() => _selectedCategory = cat),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: isTablet ? 20 : 16,
+                                vertical: isTablet ? 10 : 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? _green : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              cat,
+                              style: TextStyle(
+                                fontSize: isTablet ? 14 : 12,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // ── ALL RECIPES LABEL ──
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: hPad),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            "All Recipes",
+                            style: TextStyle(
+                              fontSize: isTablet ? 20 : 17,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          if (_isShuffled) ...[
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () =>
+                                  setState(() => _isShuffled = false),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _greenLight,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Text("🎲",
+                                        style: TextStyle(fontSize: 11)),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Shuffled · Reset",
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        color: _green,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      Text(
+                        "${filteredRecipes.length} found",
+                        style: TextStyle(
+                            fontSize: isTablet ? 14 : 12,
+                            color: Colors.grey.shade500),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+
+          // ── GRID ──
+          displayRecipes.isEmpty
+              ? const SliverFillRemaining(
+                  child:
+                      Center(child: CircularProgressIndicator(color: _green)),
+                )
+              : filteredRecipes.isEmpty
+                  ? SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: const BoxDecoration(
+                                  color: _greenLight, shape: BoxShape.circle),
+                              child: const Icon(Icons.search_off_rounded,
+                                  size: 40, color: _green),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              "No recipes found",
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Try a different search or category",
+                              style: TextStyle(
+                                  fontSize: 13, color: Colors.grey.shade500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                          _isTablet(context) ? 16 : 16, 0,
+                          _isTablet(context) ? 16 : 16, 24),
+                      sliver: SliverGrid(
+                        delegate: SliverChildBuilderDelegate(
+                          (_, index) =>
+                              _buildRecipeCard(filteredRecipes[index]),
+                          childCount: filteredRecipes.length,
+                        ),
+                        gridDelegate:
+                            SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _gridColumns(context),
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: _gridAspectRatio(context),
+                        ),
+                      ),
+                    ),
+        ],
+      ),
+    );
+  }
+
+  // ── FEATURED HERO CARD ──
+  Widget _buildFeaturedCard(dynamic recipe, double hPad) {
+    final avg = (recipe.averageRating ?? 0.0).toDouble();
+    final isTablet = _isTablet(context);
+    ref.watch(savedRecipeProvider);
+    final notifier = ref.read(savedRecipeProvider.notifier);
+    final isSaved = notifier.isSaved(recipe.id);
+
+    return GestureDetector(
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe))),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: hPad),
+        child: Container(
+          height: _featuredCardHeight(context),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: _green.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                recipe.image != null
+                    ? Image.network(
+                        ApiEndpoints.fileUrl(recipe.image),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Container(color: _greenLight),
+                      )
+                    : Container(color: _greenLight),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.75),
+                      ],
+                      stops: const [0.3, 1.0],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: GestureDetector(
+                    onTap: () => _toggleSave(recipe, notifier, isSaved),
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        isSaved
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
+                        color: _green,
+                        size: isTablet ? 22 : 18,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  bottom: 16,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _green,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.star_rounded,
+                                    color: Colors.white, size: 12),
+                                const SizedBox(width: 4),
+                                Text(
+                                  avg > 0 ? avg.toStringAsFixed(1) : "New",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (recipe.category != null &&
+                              (recipe.category as String).isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                recipe.category,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        recipe.title,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isTablet ? 24 : 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          )
-        ],
+          ),
+        ),
       ),
+    );
+  }
+
+  // ── POPULAR CARD ──
+  Widget _buildPopularCard(dynamic recipe) {
+    final avg = (recipe.averageRating ?? 0.0).toDouble();
+    final isTablet = _isTablet(context);
+    ref.watch(savedRecipeProvider);
+    final notifier = ref.read(savedRecipeProvider.notifier);
+    final isSaved = notifier.isSaved(recipe.id);
+
+    return GestureDetector(
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe))),
+      child: Container(
+        width: _popularCardWidth(context),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(16)),
+                  child: recipe.image != null
+                      ? Image.network(
+                          ApiEndpoints.fileUrl(recipe.image),
+                          height: _popularImageHeight(context),
+                          width: _popularCardWidth(context),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            height: _popularImageHeight(context),
+                            color: _greenLight,
+                            child: const Center(
+                              child: Icon(Icons.fastfood_rounded,
+                                  color: _green, size: 30),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          height: _popularImageHeight(context),
+                          color: _greenLight,
+                          child: const Center(
+                            child: Icon(Icons.fastfood_rounded,
+                                color: _green, size: 30),
+                          ),
+                        ),
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.star_rounded,
+                            color: Colors.amber, size: 11),
+                        const SizedBox(width: 3),
+                        Text(
+                          avg > 0 ? avg.toStringAsFixed(1) : "New",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: GestureDetector(
+                    onTap: () => _toggleSave(recipe, notifier, isSaved),
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Icon(
+                        isSaved
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
+                        color: _green,
+                        size: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: isTablet ? 14 : 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  if (recipe.category != null &&
+                      (recipe.category as String).isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      recipe.category,
+                      style: TextStyle(
+                          fontSize: isTablet ? 12 : 10,
+                          color: Colors.grey.shade500),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── GRID CARD ──
+  Widget _buildRecipeCard(dynamic recipe) {
+    final avg = (recipe.averageRating ?? 0.0).toDouble();
+    final isTablet = _isTablet(context);
+    ref.watch(savedRecipeProvider);
+    final notifier = ref.read(savedRecipeProvider.notifier);
+    final isSaved = notifier.isSaved(recipe.id);
+
+    return GestureDetector(
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => RecipeDetailScreen(recipe: recipe))),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(18)),
+                  child: recipe.image != null
+                      ? Image.network(
+                          ApiEndpoints.fileUrl(recipe.image),
+                          height: isTablet ? 160 : 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            height: isTablet ? 160 : 120,
+                            color: _greenLight,
+                            child: const Center(
+                              child: Icon(Icons.fastfood_rounded,
+                                  size: 36, color: _green),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          height: isTablet ? 160 : 120,
+                          color: _greenLight,
+                          child: const Center(
+                            child: Icon(Icons.fastfood_rounded,
+                                size: 36, color: _green),
+                          ),
+                        ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: GestureDetector(
+                    onTap: () => _toggleSave(recipe, notifier, isSaved),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        isSaved
+                            ? Icons.bookmark_rounded
+                            : Icons.bookmark_border_rounded,
+                        color: _green,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recipe.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: isTablet ? 15 : 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  if (recipe.category != null &&
+                      (recipe.category as String).isNotEmpty) ...[
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _greenLight,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        recipe.category!,
+                        style: TextStyle(
+                          fontSize: isTablet ? 12 : 10,
+                          color: _green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 5),
+                  _buildRatingRow(avg),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _toggleSave(dynamic recipe, dynamic notifier, bool isSaved) {
+    if (isSaved) {
+      notifier.removeRecipe(recipe.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(children: [
+            Icon(Icons.bookmark_remove, color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text("Recipe removed"),
+          ]),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } else {
+      notifier.saveRecipe(
+        SavedRecipeEntity(
+          id: recipe.id,
+          title: recipe.title,
+          image: recipe.image,
+          category: recipe.category,
+          description: recipe.description,
+          ingredients:
+              List<Map<String, dynamic>>.from(recipe.ingredients ?? []),
+          instructions: List<String>.from(recipe.instructions ?? []),
+        ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(children: [
+            Icon(Icons.bookmark_added, color: Colors.white, size: 16),
+            SizedBox(width: 8),
+            Text("Recipe saved!"),
+          ]),
+          backgroundColor: _green,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
+
+  Widget _buildRatingRow(double avg) {
+    final isTablet = _isTablet(context);
+    if (avg == 0) {
+      return Row(
+        children: [
+          Icon(Icons.star_border_rounded,
+              size: 12, color: Colors.grey.shade400),
+          const SizedBox(width: 3),
+          Text("No ratings",
+              style: TextStyle(
+                  fontSize: isTablet ? 12 : 10, color: Colors.grey.shade400)),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        ...List.generate(5, (i) {
+          if (avg >= i + 1) {
+            return Icon(Icons.star_rounded,
+                size: isTablet ? 14 : 12, color: _green);
+          } else if (avg >= i + 0.5) {
+            return Icon(Icons.star_half_rounded,
+                size: isTablet ? 14 : 12, color: _green);
+          } else {
+            return Icon(Icons.star_border_rounded,
+                size: isTablet ? 14 : 12, color: Colors.grey.shade300);
+          }
+        }),
+        const SizedBox(width: 4),
+        Text(
+          avg.toStringAsFixed(1),
+          style: TextStyle(
+            fontSize: isTablet ? 12 : 10,
+            fontWeight: FontWeight.w700,
+            color: _green,
+          ),
+        ),
+      ],
     );
   }
 }

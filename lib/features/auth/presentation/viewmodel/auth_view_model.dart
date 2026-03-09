@@ -18,10 +18,10 @@ class UserViewModel extends Notifier<AuthState> {
   AuthState build() {
     _registerUsecase = ref.read(registerUsecaseProvider);
     _loginUsecase = ref.read(loginUsecaseProvider);
-    _uploadProfileImageUsecase =
-        ref.read(uploadProfileImageUsecaseProvider);
+    _uploadProfileImageUsecase = ref.read(uploadProfileImageUsecaseProvider);
     return const AuthState();
   }
+
   Future<void> register({
     required String fullName,
     required String email,
@@ -62,14 +62,14 @@ class UserViewModel extends Notifier<AuthState> {
       },
     );
   }
+
   Future<void> login({
     required String email,
     required String password,
   }) async {
     state = state.copyWith(status: AuthStatus.loading);
 
-    final loginParams =
-        LoginUsecaseParams(email: email, password: password);
+    final loginParams = LoginUsecaseParams(email: email, password: password);
 
     final result = await _loginUsecase(loginParams);
 
@@ -88,6 +88,7 @@ class UserViewModel extends Notifier<AuthState> {
       },
     );
   }
+
   Future<void> uploadProfileImage(File image) async {
     state = state.copyWith(status: AuthStatus.loading);
 
@@ -107,5 +108,10 @@ class UserViewModel extends Notifier<AuthState> {
         );
       },
     );
+  }
+
+  // ← ADD THIS
+  void logout() {
+    state = const AuthState();
   }
 }

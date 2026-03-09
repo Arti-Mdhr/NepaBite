@@ -1,0 +1,110 @@
+---------------------------------------------|---------|---------|---------|-------------------|
+File                                         |% Branch | % Funcs | % Lines | Uncovered Line #s |
+---------------------------------------------|---------|---------|---------|-------------------|
+lib/                                         |         |         |         |                   |
+ main.dart                                   |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/app/                                     |         |         |         |                   |
+ app.dart                                    |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/app/routes/                              |         |         |         |                   |
+ app_routes.dart                             |  100.00 |  100.00 |    0.00 |...1,22,27,28,32,33|
+lib/app/themes/                              |         |         |         |                   |
+ app_theme.dart                              |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/core/api/                                |         |         |         |                   |
+ api_client.dart                             |  100.00 |  100.00 |   28.57 |...,164,165,166,168|
+ api_endpoints.dart                          |  100.00 |  100.00 |    0.00 |...3,59,60,61,67,75|
+lib/core/constants/                          |         |         |         |                   |
+ hive_table_constant.dart                    |  100.00 |  100.00 |    0.00 |                  2|
+lib/core/errors/                             |         |         |         |                   |
+ failure.dart                                |  100.00 |  100.00 |   33.33 |    7,8,14,17,29,30|
+lib/core/services/connectivity/              |         |         |         |                   |
+ network_info.dart                           |  100.00 |  100.00 |   27.27 |...1,24,28,30,31,32|
+lib/core/services/hive/                      |         |         |         |                   |
+ hive_service.dart                           |  100.00 |  100.00 |    6.90 |...0,65,66,69,70,71|
+lib/core/services/media/                     |         |         |         |                   |
+ media_service.dart                          |  100.00 |  100.00 |    0.00 |...0,71,75,78,84,86|
+lib/core/services/storage/                   |         |         |         |                   |
+ storage_service.dart                        |    0.00 |    0.00 |    0.00 |    no unit testing|
+ user_session_service.dart                   |  100.00 |  100.00 |    4.65 |...5,99,101,102,105|
+lib/core/usecases/                           |         |         |         |                   |
+ app_usecase.dart                            |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/core/utils/                              |         |         |         |                   |
+ snackbar_utils.dart                         |  100.00 |  100.00 |    0.00 |...5,16,17,18,19,20|
+lib/features/auth/data/datasource/           |         |         |         |                   |
+ auth_datasource.dart                        |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/features/auth/data/datasource/local/     |         |         |         |                   |
+ auth_local_datasource.dart                  |  100.00 |  100.00 |   22.73 |...6,65,68,69,76,78|
+lib/features/auth/data/datasource/remote/    |         |         |         |                   |
+ auth_remote_datasource.dart                 |  100.00 |  100.00 |   11.90 |...,112,113,114,118|
+lib/features/auth/data/model/                |         |         |         |                   |
+ auth_api_model.dart                         |  100.00 |  100.00 |   26.19 |...9,70,71,72,76,77|
+ auth_hive_model.dart                        |  100.00 |  100.00 |    0.00 |...8,39,42,43,46,47|
+ auth_hive_model.g.dart                      |  100.00 |  100.00 |    0.00 |...7,48,50,53,54,55|
+lib/features/auth/data/repository/           |         |         |         |                   |
+ auth_repository.dart                        |  100.00 |  100.00 |   17.19 |...,159,160,164,167|
+lib/features/auth/domain/entity/             |         |         |         |                   |
+ auth_entity.dart                            |  100.00 |  100.00 |  100.00 |                   |
+lib/features/auth/domain/repository/         |         |         |         |                   |
+ auth_repository.dart                        |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/features/auth/domain/usecases/           |         |         |         |                   |
+ login_usecase.dart                          |  100.00 |  100.00 |   75.00 |              18,19|
+ register_usecase.dart                       |  100.00 |  100.00 |   86.67 |              27,28|
+ upload_profile_image_usecase.dart           |  100.00 |  100.00 |  100.00 |                   |
+lib/features/auth/presentation/pages/        |         |         |         |                   |
+ login_screen.dart                           |  100.00 |  100.00 |   84.62 |...,174,255,257,258|
+ sign_up_screen.dart                         |  100.00 |  100.00 |   69.11 |...,237,304,306,307|
+lib/features/auth/presentation/state/        |         |         |         |                   |
+ auth_state.dart                             |  100.00 |  100.00 |   12.50 |...2,23,24,25,29,30|
+lib/features/auth/presentation/viewmodel/    |         |         |         |                   |
+ auth_view_model.dart                        |  100.00 |  100.00 |   15.79 |...,104,105,114,115|
+lib/features/cart/data/                      |         |         |         |                   |
+ grocery_storage_service.dart                |  100.00 |  100.00 |    0.00 |...0,31,32,35,36,39|
+lib/features/cart/data/datasource/           |         |         |         |                   |
+ cart_remote_datasource.dart                 |  100.00 |  100.00 |    0.00 |...2,19,20,21,24,25|
+lib/features/cart/domain/entity/             |         |         |         |                   |
+ cart_item_entity.dart                       |  100.00 |  100.00 |    0.00 |                  6|
+ grocery_list_entity.dart                    |  100.00 |  100.00 |    0.00 |...2,13,17,18,19,20|
+lib/features/cart/presentation/viewmodel/    |         |         |         |                   |
+ cart_view_model.dart                        |  100.00 |  100.00 |    4.17 |...7,88,89,90,93,95|
+lib/features/recipe/data/datasource/         |         |         |         |                   |
+ recipe_remote_datasource.dart               |  100.00 |  100.00 |    0.00 |...4,17,18,20,23,24|
+ saved_recipe_remote_datasource.dart         |  100.00 |  100.00 |    0.00 |...2,18,19,20,23,24|
+lib/features/recipe/data/model/              |         |         |         |                   |
+ recipe_api_model.dart                       |  100.00 |  100.00 |    0.00 |...6,47,48,49,50,51|
+lib/features/recipe/data/repository/         |         |         |         |                   |
+ recipe_repository_impl.dart                 |  100.00 |  100.00 |    0.00 |...7,20,23,24,25,27|
+lib/features/recipe/domain/entity/           |         |         |         |                   |
+ recipe_entity.dart                          |  100.00 |  100.00 |    9.09 |...9,30,31,32,33,34|
+ saved_recipe_entity.dart                    |  100.00 |  100.00 |    0.00 |                 10|
+lib/features/recipe/domain/repository/       |         |         |         |                   |
+ recipe_repository.dart                      |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/features/recipe/domain/usecases/         |         |         |         |                   |
+ get_recipes_usecase.dart                    |  100.00 |  100.00 |   50.00 |              5,6,7|
+lib/features/recipe/presentation/viewmodel/  |         |         |         |                   |
+ recipe_view_model.dart                      |  100.00 |  100.00 |   16.67 |...9,20,22,23,24,25|
+ saved_recipe_view_model.dart                |  100.00 |  100.00 |    7.14 |...2,54,56,59,63,64|
+lib/features/review/data/datasource/         |         |         |         |                   |
+ review_remote_datasource.dart               |  100.00 |  100.00 |    0.00 |...7,42,44,45,47,49|
+lib/features/review/data/model/              |         |         |         |                   |
+ review_api_model.dart                       |  100.00 |  100.00 |    0.00 |...8,39,40,41,42,43|
+lib/features/review/domain/entity/           |         |         |         |                   |
+ review_entity.dart                          |  100.00 |  100.00 |    0.00 |                  9|
+lib/features/review/presentation/viewmodel/  |         |         |         |                   |
+ review_view_model.dart                      |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/onboarding/                              |         |         |         |                   |
+ onboarding_screen.dart                      |    0.00 |    0.00 |    0.00 |    no unit testing|
+ splash_screen.dart                          |    0.00 |    0.00 |    0.00 |    no unit testing|
+lib/screens/grocery/                         |         |         |         |                   |
+ grocery_list_detail_screen.dart             |    0.00 |    0.00 |    0.00 |    no unit testing|
+ saved_grocery_lists.dart                    |  100.00 |  100.00 |    0.65 |...,413,416,418,420|
+lib/screens/home/                            |         |         |         |                   |
+ cart_screen.dart                            |  100.00 |  100.00 |    7.29 |...,918,919,921,923|
+ homepage_screen.dart                        |  100.00 |  100.00 |   27.08 |...1,1122,1123,1124|
+ profile_screen.dart                         |  100.00 |  100.00 |   58.51 |...,542,543,544,545|
+ saved_recipe_screen.dart                    |  100.00 |  100.00 |   24.42 |...,234,235,237,239|
+lib/screens/recipe/                          |         |         |         |                   |
+ recipe_detail_screen.dart                   |  100.00 |  100.00 |    0.00 |...,559,560,566,567|
+ recipe_ingredients_screen.dart              |  100.00 |  100.00 |    0.00 |...,266,270,271,273|
+ recipe_procedure_screen.dart                |  100.00 |  100.00 |    0.00 |...,527,528,530,532|
+---------------------------------------------|---------|---------|---------|-------------------|
+ All files with unit testing                 |  100.00 |  100.00 |   20.21 |                   |
+---------------------------------------------|---------|---------|---------|-------------------|

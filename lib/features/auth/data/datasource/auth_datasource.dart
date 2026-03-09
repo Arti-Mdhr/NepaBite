@@ -8,10 +8,6 @@ abstract interface class IAuthLocalDatasource {
   Future<AuthHiveModel?> loginUser(String email, String password);
   Future<AuthHiveModel?> getCurrentUser();
   Future<bool> logout();
-
-  // Extra Methods: Doesnt Have to be in DOMAIN LAYER repository
-
-  // Method to check if email exists
   Future<bool> isEmailExists(String email);
 }
 
